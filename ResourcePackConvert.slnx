@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="ResourcePackConvert.Cli/ResourcePackConvert.Cli.csproj" />
+  <Project Path="ResourcePackConvert.Core/ResourcePackConvert.Core.csproj" />
+</Solution>
