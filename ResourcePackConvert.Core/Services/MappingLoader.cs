@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.Json;
 
 namespace ResourcePackConvert.Core.Services;
@@ -9,7 +10,24 @@ public class MappingLoader
 
     public MappingLoader(string mappingsDir = "mappings")
     {
-        _mappingsDir = mappingsDir;
+        // If the directory doesn't exist on disk, try to extract from embedded resources
+        if (!Directory.Exists(mappingsDir))
+        {
+            var extracted = EmbeddedResourceHelper.ExtractToTemp("mappings");
+            if (Directory.Exists(extracted) && Directory.GetFiles(extracted, "*.json").Length > 0)
+            {
+                _mappingsDir = extracted;
+                Console.WriteLine($"[INFO] Extracted mappings from embedded resources to: {extracted}");
+            }
+            else
+            {
+                _mappingsDir = mappingsDir;
+            }
+        }
+        else
+        {
+            _mappingsDir = mappingsDir;
+        }
     }
 
     public Dictionary<string, string> LoadAllMappings()
@@ -18,6 +36,28 @@ public class MappingLoader
 
         if (!Directory.Exists(_mappingsDir))
         {
+            // Final fallback: try to read directly from embedded resources (no extraction)
+            var embeddedContent = EmbeddedResourceHelper.ReadAllTextFromFolder("mappings");
+            if (embeddedContent.Count > 0)
+            {
+                Console.WriteLine($"[INFO] Reading {embeddedContent.Count} mapping files from embedded resources...");
+                foreach (var (resourceName, content) in embeddedContent)
+                {
+                    try
+                    {
+                        var categoryMappings = ParseMappingJson(content, resourceName);
+                        if (categoryMappings == null) continue;
+                        MergeIntoCombined(combinedMappings, categoryMappings);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[ERROR] Failed to parse embedded mapping {resourceName}: {ex.Message}");
+                    }
+                }
+                Console.WriteLine($"[INFO] Total mappings loaded: {combinedMappings.Count}");
+                return combinedMappings;
+            }
+
             Console.WriteLine($"[WARNING] Mappings directory not found: {_mappingsDir}");
             return combinedMappings;
         }
@@ -214,5 +254,60 @@ public class MappingLoader
             ["duplicates"] = duplicates,
             ["categories"] = GetCategories()
         };
+    }
+
+    /// <summary>
+    /// Parses a JSON string into a mapping dictionary (mirrors LoadMappingFile logic).
+    /// </summary>
+    private static Dictionary<string, object>? ParseMappingJson(string json, string resourceName)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var data = new Dictionary<string, object>();
+
+            foreach (var prop in doc.RootElement.EnumerateObject())
+            {
+                data[prop.Name] = prop.Value.Clone();
+            }
+
+            return data;
+        }
+        catch (JsonException ex)
+        {
+            Console.WriteLine($"[ERROR] Invalid JSON in embedded resource {resourceName}: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Merges a parsed mapping dictionary into the combined result.
+    /// </summary>
+    private static void MergeIntoCombined(Dictionary<string, string> combined, Dictionary<string, object> categoryMappings)
+    {
+        foreach (var kvp in categoryMappings)
+        {
+            if (kvp.Key is "category" or "description" or "mappings")
+                continue;
+
+            if (kvp.Value is JsonElement elem && elem.ValueKind == JsonValueKind.String)
+            {
+                var value = elem.GetString();
+                if (value != null)
+                    combined[kvp.Key] = value;
+            }
+        }
+
+        if (categoryMappings.TryGetValue("mappings", out var mappingsObj) &&
+            mappingsObj is JsonElement mappingsElement &&
+            mappingsElement.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var prop in mappingsElement.EnumerateObject())
+            {
+                var value = prop.Value.GetString();
+                if (value != null)
+                    combined[prop.Name] = value;
+            }
+        }
     }
 }

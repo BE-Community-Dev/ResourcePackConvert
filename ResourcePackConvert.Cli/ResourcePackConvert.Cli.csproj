@@ -5,10 +5,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="mappings\**\*" Link="mappings\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="required\**\*" Link="required\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="essentials\**\*" Link="essentials\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="rtxfix\**\*" Link="rtxfix\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Include="mappings\**\*" Link="mappings\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -16,7 +13,6 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <NuGetAudit>false</NuGetAudit>
   </PropertyGroup>
 
 </Project>

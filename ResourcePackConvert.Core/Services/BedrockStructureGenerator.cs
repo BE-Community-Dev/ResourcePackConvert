@@ -122,6 +122,19 @@ public class BedrockStructureGenerator
             var resolvedSource = ResolveRequiredPath(sourcePath);
             if (!File.Exists(resolvedSource))
             {
+                // Try embedded resource fallback
+                var embeddedContent = EmbeddedResourceHelper.ReadResourceText(sourcePath);
+                if (embeddedContent != null)
+                {
+                    var destFolder = Path.GetDirectoryName(destPath);
+                    if (!string.IsNullOrEmpty(destFolder))
+                        Directory.CreateDirectory(destFolder);
+
+                    File.WriteAllText(destPath, embeddedContent);
+                    Console.WriteLine($"[INFO] Extracted {Path.GetFileName(sourcePath)} from embedded resources");
+                    return true;
+                }
+
                 Console.WriteLine($"[ERROR] Required file not found: {sourcePath} (resolved: {resolvedSource})");
                 return false;
             }

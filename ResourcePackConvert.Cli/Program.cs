@@ -43,8 +43,6 @@ static int HandleConvert(ResourcePackConvertConverter converter, string[] args)
     string? packDescription = null;
     bool validateInput = true;
     bool enablePbr = true;
-    bool essentials = false;
-    bool rtxfix = false;
 
     for (int i = 0; i < args.Length; i++)
     {
@@ -66,14 +64,6 @@ static int HandleConvert(ResourcePackConvertConverter converter, string[] args)
         {
             enablePbr = false;
         }
-        else if (arg == "--essentials")
-        {
-            essentials = true;
-        }
-        else if (arg == "--rtxfix")
-        {
-            rtxfix = true;
-        }
         else if (!arg.StartsWith("--"))
         {
             if (input == null)
@@ -91,16 +81,13 @@ static int HandleConvert(ResourcePackConvertConverter converter, string[] args)
         Console.WriteLine("  --pack-description DESC    Custom pack description");
         Console.WriteLine("  --no-validation            Skip input pack validation");
         Console.WriteLine("  --disable-pbr              Disable PBR texture conversion");
-        Console.WriteLine("  --essentials               Copy files from essentials folder");
-        Console.WriteLine("  --rtxfix                   Apply RTX fixes from rtxfix folder");
         return 1;
     }
 
     var success = converter.ConvertResourcePack(
         input, output,
         packName, packDescription,
-        validateInput, enablePbr,
-        essentials, rtxfix);
+        validateInput, enablePbr);
 
     return success ? 0 : 1;
 }
@@ -182,13 +169,10 @@ Convert Options:
   --pack-description DESC    Custom pack description
   --no-validation            Skip input pack validation
   --disable-pbr              Disable PBR texture conversion
-  --essentials               Copy files from essentials folder
-  --rtxfix                   Apply RTX fixes from rtxfix folder
 
 Examples:
   ResourcePackConvert.Converter convert pack.zip output.mcpack
   ResourcePackConvert.Converter convert pack.zip output.mcpack --pack-name ""My Pack""
-  ResourcePackConvert.Converter convert pack.zip output.mcpack --essentials --rtxfix
   ResourcePackConvert.Converter info
   ResourcePackConvert.Converter validate
 ");

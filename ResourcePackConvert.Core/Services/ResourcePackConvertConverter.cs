@@ -7,8 +7,6 @@ namespace ResourcePackConvert.Core.Services;
 public class ResourcePackConvertConverter
 {
     private readonly string _mappingsDir;
-    private readonly string _essentialsDir;
-    private readonly string _rtxfixDir;
     private readonly MappingLoader _mappingLoader;
     private readonly PackManager _packManager;
     private readonly TextureConverter _textureConverter;
@@ -39,8 +37,6 @@ public class ResourcePackConvertConverter
     public ResourcePackConvertConverter(string mappingsDir = "mappings")
     {
         _mappingsDir = ResolveDataPath(mappingsDir);
-        _essentialsDir = ResolveDataPath("essentials");
-        _rtxfixDir = ResolveDataPath("rtxfix");
 
         _mappingLoader = new MappingLoader(_mappingsDir);
         _packManager = new PackManager();
@@ -54,8 +50,7 @@ public class ResourcePackConvertConverter
 
     public bool ConvertResourcePack(string inputPath, string outputPath,
         string? packName = null, string? packDescription = null,
-        bool validateInput = true, bool enablePbr = true,
-        bool essentials = false, bool rtxfix = false)
+        bool validateInput = true, bool enablePbr = true)
     {
         try
         {
@@ -133,18 +128,6 @@ public class ResourcePackConvertConverter
 
             var assetStats = _packManager.CopyOtherAssets(minecraftDir, bedrockTemp);
             LogAssetStats(assetStats);
-
-            if (essentials)
-            {
-                Console.WriteLine("[INFO] Copying essentials files...");
-                CopyEssentials(bedrockTemp);
-            }
-
-            if (rtxfix)
-            {
-                Console.WriteLine("[INFO] Applying RTX fixes...");
-                ApplyRtxFix(bedrockTemp);
-            }
 
             Console.WriteLine("[INFO] Creating .mcpack file...");
             if (!_packManager.CreateMcpack(bedrockTemp, outputPath))
@@ -411,103 +394,5 @@ public class ResourcePackConvertConverter
         {
             Console.WriteLine($"[ERROR] Failed to validate missing mappings: {ex.Message}");
         }
-    }
-
-    private void CopyEssentials(string bedrockTemp)
-    {
-        var essentialsDir = _essentialsDir;
-        if (!Directory.Exists(essentialsDir))
-        {
-            Console.WriteLine("[WARNING] Essentials folder not found, skipping...");
-            return;
-        }
-
-        var blocksDir = Path.Combine(bedrockTemp, "textures", "blocks");
-        Directory.CreateDirectory(blocksDir);
-
-        var copiedCount = 0;
-        var skippedCount = 0;
-
-        foreach (var filePath in Directory.GetFiles(essentialsDir))
-        {
-            var destPath = Path.Combine(blocksDir, Path.GetFileName(filePath));
-
-            if (File.Exists(destPath))
-            {
-                Console.WriteLine($"[DEBUG] Skipping {Path.GetFileName(filePath)} - already exists");
-                skippedCount++;
-            }
-            else
-            {
-                try
-                {
-                    File.Copy(filePath, destPath);
-                    Console.WriteLine($"[DEBUG] Copied essential file: {Path.GetFileName(filePath)}");
-                    copiedCount++;
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[WARNING] Failed to copy {Path.GetFileName(filePath)}: {ex.Message}");
-                }
-            }
-        }
-
-        Console.WriteLine($"[INFO] Essentials: copied {copiedCount} files, skipped {skippedCount} existing files");
-    }
-
-    private void ApplyRtxFix(string bedrockTemp)
-    {
-        var rtxfixDir = _rtxfixDir;
-        if (!Directory.Exists(rtxfixDir))
-        {
-            Console.WriteLine("[WARNING] RTXfix folder not found, skipping...");
-            return;
-        }
-
-        var copiedCount = 0;
-        var replacedCount = 0;
-
-        void CopyRecursive(string srcDir, string destDir)
-        {
-            foreach (var item in Directory.GetFileSystemEntries(srcDir))
-            {
-                var itemName = Path.GetFileName(item);
-                var destItem = Path.Combine(destDir, itemName);
-
-                if (File.Exists(item))
-                {
-                    try
-                    {
-                        var destParent = Path.GetDirectoryName(destItem);
-                        if (!string.IsNullOrEmpty(destParent))
-                            Directory.CreateDirectory(destParent);
-
-                        if (File.Exists(destItem))
-                        {
-                            replacedCount++;
-                            Console.WriteLine($"[DEBUG] Replacing file: {Path.GetRelativePath(rtxfixDir, item)}");
-                        }
-                        else
-                        {
-                            copiedCount++;
-                            Console.WriteLine($"[DEBUG] Adding file: {Path.GetRelativePath(rtxfixDir, item)}");
-                        }
-
-                        File.Copy(item, destItem, true);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"[WARNING] Failed to copy {Path.GetRelativePath(rtxfixDir, item)}: {ex.Message}");
-                    }
-                }
-                else if (Directory.Exists(item))
-                {
-                    CopyRecursive(item, destItem);
-                }
-            }
-        }
-
-        CopyRecursive(rtxfixDir, bedrockTemp);
-        Console.WriteLine($"[INFO] RTXfix: added {copiedCount} files, replaced {replacedCount} files");
     }
 }
