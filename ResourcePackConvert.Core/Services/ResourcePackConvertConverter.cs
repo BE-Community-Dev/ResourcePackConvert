@@ -147,7 +147,7 @@ public class ResourcePackConvertConverter
                 return false;
             }
 
-            GenerateConversionReport(conversionStats, assetStats, pbrStats, outputPath, enablePbr);
+            // GenerateConversionReport(conversionStats, assetStats, pbrStats, outputPath, enablePbr);
 
             ReportProgress("Conversion completed successfully!", 100, "Done");
             ReportProgress($"Output saved to: {outputPath}", 100, "Done");
