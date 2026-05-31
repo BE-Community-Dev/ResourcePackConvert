@@ -1,4 +1,5 @@
-﻿using ResourcePackConvert.Core.Services;
+﻿using ResourcePackConvert.Core.Models;
+using ResourcePackConvert.Core.Services;
 
 if (args.Length == 0 || args[0] == "--help" || args[0] == "-h")
 {
@@ -11,7 +12,7 @@ var command = args[0].ToLower();
 try
 {
     var converter = new ResourcePackConvertConverter(
-        progress: new Progress<string>(msg => Console.WriteLine(msg)));
+        progress: new Progress<ConversionProgress>(p => Console.WriteLine(p.ToString())));
 
     switch (command)
     {
