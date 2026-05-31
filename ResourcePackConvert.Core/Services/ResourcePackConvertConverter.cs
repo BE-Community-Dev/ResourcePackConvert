@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text.Json;
 using ResourcePackConvert.Core.Models;
 
@@ -14,6 +13,12 @@ public class ResourcePackConvertConverter
     private readonly PbrConverter _pbrConverter;
 
     private Dictionary<string, string> _textureMappings;
+
+    /// <summary>
+    /// Optional progress callback — reports conversion stages and statistics.
+    /// Subscribe via <c>new Progress&lt;string&gt;(msg => ...)</c>.
+    /// </summary>
+    private readonly IProgress<string>? _progress;
 
     /// <summary>
     /// Resolves a data directory path relative to the assembly location,
@@ -34,8 +39,19 @@ public class ResourcePackConvertConverter
         return assemblyRelative;
     }
 
-    public ResourcePackConvertConverter(string mappingsDir = "mappings")
+    private void ReportProgress(string message)
     {
+        _progress?.Report(message);
+    }
+
+    /// <summary>
+    /// Creates a converter with optional progress reporting.
+    /// </summary>
+    /// <param name="mappingsDir">Folder name for mapping files (embedded or on-disk).</param>
+    /// <param name="progress">Optional <see cref="IProgress{T}"/> callback.</param>
+    public ResourcePackConvertConverter(string mappingsDir = "Mappings", IProgress<string>? progress = null)
+    {
+        _progress = progress;
         _mappingsDir = ResolveDataPath(mappingsDir);
 
         _mappingLoader = new MappingLoader(_mappingsDir);
@@ -45,7 +61,7 @@ public class ResourcePackConvertConverter
         _pbrConverter = new PbrConverter();
 
         _textureMappings = _mappingLoader.LoadAllMappings();
-        Console.WriteLine($"[INFO] Initialized converter with {_textureMappings.Count} texture mappings");
+        ReportProgress($"[INFO] Initialized converter with {_textureMappings.Count} texture mappings");
     }
 
     public bool ConvertResourcePack(string inputPath, string outputPath,
@@ -54,16 +70,16 @@ public class ResourcePackConvertConverter
     {
         try
         {
-            Console.WriteLine($"[INFO] Starting conversion of {inputPath}");
+            ReportProgress($"[INFO] Starting conversion of {inputPath}");
 
-            Console.WriteLine("[INFO] Validating input pack...");
+            ReportProgress("[INFO] Validating input pack...");
             if (validateInput)
             {
                 if (!ValidateInputPack(inputPath))
                     return false;
             }
 
-            Console.WriteLine("[INFO] Preparing workspace...");
+            ReportProgress("[INFO] Preparing workspace...");
             var tempDir = _packManager.CreateTempDirectory("ResourcePackConvert_conversion");
             var javaTemp = Path.Combine(tempDir, "java_extracted");
             var bedrockTemp = Path.Combine(tempDir, "bedrock_build");
@@ -71,7 +87,7 @@ public class ResourcePackConvertConverter
             Directory.CreateDirectory(javaTemp);
             Directory.CreateDirectory(bedrockTemp);
 
-            Console.WriteLine("[INFO] Extracting Java pack...");
+            ReportProgress("[INFO] Extracting Java pack...");
             var minecraftDir = _packManager.ExtractJavaPack(inputPath, javaTemp);
             if (minecraftDir == null)
                 return false;
@@ -80,18 +96,18 @@ public class ResourcePackConvertConverter
             packName ??= packInfo.Name;
             packDescription ??= packInfo.Description;
 
-            Console.WriteLine($"[INFO] Converting pack: {packName}");
-            Console.WriteLine($"[INFO] Original pack has {packInfo.TextureCount} textures in categories: {string.Join(", ", packInfo.Categories)}");
+            ReportProgress($"[INFO] Converting pack: {packName}");
+            ReportProgress($"[INFO] Original pack has {packInfo.TextureCount} textures in categories: {string.Join(", ", packInfo.Categories)}");
 
-            Console.WriteLine("[INFO] Creating Bedrock structure...");
+            ReportProgress("[INFO] Creating Bedrock structure...");
             _bedrockGenerator.CreateBedrockStructure(bedrockTemp);
             if (!_bedrockGenerator.GenerateManifest(bedrockTemp, packName, packDescription, enablePbr: enablePbr))
             {
-                Console.WriteLine("[ERROR] Failed to generate manifest.json");
+                ReportProgress("[ERROR] Failed to generate manifest.json");
                 return false;
             }
 
-            Console.WriteLine("[INFO] Converting textures...");
+            ReportProgress("[INFO] Converting textures...");
             var javaTexturesDir = Path.Combine(minecraftDir, "textures");
             var bedrockTexturesDir = Path.Combine(bedrockTemp, "textures");
 
@@ -101,11 +117,11 @@ public class ResourcePackConvertConverter
             PbrStats? pbrStats = null;
             if (enablePbr)
             {
-                Console.WriteLine("[INFO] Processing PBR textures...");
+                ReportProgress("[INFO] Processing PBR textures...");
             }
             else
             {
-                Console.WriteLine("[INFO] Skipping PBR conversion...");
+                ReportProgress("[INFO] Skipping PBR conversion...");
             }
 
             if (enablePbr)
@@ -114,10 +130,10 @@ public class ResourcePackConvertConverter
                 LogPbrStats(pbrStats);
             }
 
-            Console.WriteLine("[INFO] Validating missing mappings...");
+            ReportProgress("[INFO] Validating missing mappings...");
             ValidateMissingMappings(javaTexturesDir);
 
-            Console.WriteLine("[INFO] Copying required files...");
+            ReportProgress("[INFO] Copying required files...");
 
             _bedrockGenerator.GenerateTerrainTextureJson(bedrockTemp);
             _bedrockGenerator.GenerateItemTextureJson(bedrockTemp);
@@ -129,25 +145,25 @@ public class ResourcePackConvertConverter
             var assetStats = _packManager.CopyOtherAssets(minecraftDir, bedrockTemp);
             LogAssetStats(assetStats);
 
-            Console.WriteLine("[INFO] Creating .mcpack file...");
+            ReportProgress("[INFO] Creating .mcpack file...");
             if (!_packManager.CreateMcpack(bedrockTemp, outputPath))
             {
-                Console.WriteLine("[ERROR] Failed to create .mcpack file");
+                ReportProgress("[ERROR] Failed to create .mcpack file");
                 return false;
             }
 
             GenerateConversionReport(conversionStats, assetStats, pbrStats, outputPath, enablePbr);
 
-            Console.WriteLine("[INFO] Conversion completed successfully!");
-            Console.WriteLine($"[INFO] Output saved to: {outputPath}");
+            ReportProgress("[INFO] Conversion completed successfully!");
+            ReportProgress($"[INFO] Output saved to: {outputPath}");
             if (enablePbr)
-                Console.WriteLine("[INFO] PBR textures converted - pack supports RTX/ray tracing features");
+                ReportProgress("[INFO] PBR textures converted - pack supports RTX/ray tracing features");
 
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERROR] Conversion failed: {ex.Message}");
+            ReportProgress($"[ERROR] Conversion failed: {ex.Message}");
             return false;
         }
         finally
@@ -162,49 +178,49 @@ public class ResourcePackConvertConverter
 
         if (!validationResult.Valid)
         {
-            Console.WriteLine("[ERROR] Input pack validation failed:");
+            ReportProgress("[ERROR] Input pack validation failed:");
             foreach (var error in validationResult.Errors)
-                Console.WriteLine($"[ERROR]   - {error}");
+                ReportProgress($"[ERROR]   - {error}");
             return false;
         }
 
-        Console.WriteLine("[INFO] Input pack validation passed");
-        Console.WriteLine($"[INFO] Pack has {validationResult.TextureCategories.Count} texture categories: {string.Join(", ", validationResult.TextureCategories)}");
+        ReportProgress("[INFO] Input pack validation passed");
+        ReportProgress($"[INFO] Pack has {validationResult.TextureCategories.Count} texture categories: {string.Join(", ", validationResult.TextureCategories)}");
         return true;
     }
 
     private void LogConversionStats(ConversionStats stats)
     {
-        Console.WriteLine("[INFO] Texture conversion completed:");
-        Console.WriteLine($"[INFO]   Total files processed: {stats.Total}");
-        Console.WriteLine($"[INFO]   Successfully converted: {stats.Converted}");
-        Console.WriteLine($"[INFO]   Skipped (already exist): {stats.Skipped}");
-        Console.WriteLine($"[INFO]   Missing mappings: {stats.Missing}");
-        Console.WriteLine($"[INFO]   Errors: {stats.Errors}");
+        ReportProgress("[INFO] Texture conversion completed:");
+        ReportProgress($"[INFO]   Total files processed: {stats.Total}");
+        ReportProgress($"[INFO]   Successfully converted: {stats.Converted}");
+        ReportProgress($"[INFO]   Skipped (already exist): {stats.Skipped}");
+        ReportProgress($"[INFO]   Missing mappings: {stats.Missing}");
+        ReportProgress($"[INFO]   Errors: {stats.Errors}");
 
         if (stats.Missing > 0)
-            Console.WriteLine("[WARNING] Some textures have missing mappings - check missing_mappings.json for details");
+            ReportProgress("[WARNING] Some textures have missing mappings - check missing_mappings.json for details");
     }
 
     private void LogPbrStats(PbrStats stats)
     {
-        Console.WriteLine("[INFO] PBR conversion completed:");
-        Console.WriteLine($"[INFO]   Specular maps converted: {stats.SpecularConverted}");
-        Console.WriteLine($"[INFO]   Normal maps converted: {stats.NormalConverted}");
-        Console.WriteLine($"[INFO]   MER maps generated: {stats.MerGenerated}");
-        Console.WriteLine($"[INFO]   Texture set JSONs created: {stats.TextureSetsCreated}");
-        Console.WriteLine($"[INFO]   PBR errors: {stats.Errors}");
+        ReportProgress("[INFO] PBR conversion completed:");
+        ReportProgress($"[INFO]   Specular maps converted: {stats.SpecularConverted}");
+        ReportProgress($"[INFO]   Normal maps converted: {stats.NormalConverted}");
+        ReportProgress($"[INFO]   MER maps generated: {stats.MerGenerated}");
+        ReportProgress($"[INFO]   Texture set JSONs created: {stats.TextureSetsCreated}");
+        ReportProgress($"[INFO]   PBR errors: {stats.Errors}");
     }
 
     private void LogAssetStats(AssetStats stats)
     {
         if (stats.Total > 0)
         {
-            Console.WriteLine("[INFO] Other assets copied:");
+            ReportProgress("[INFO] Other assets copied:");
             foreach (var (assetType, count) in stats)
             {
                 if (count > 0)
-                    Console.WriteLine($"[INFO]   {assetType}: {count} files");
+                    ReportProgress($"[INFO]   {assetType}: {count} files");
             }
         }
     }
@@ -275,11 +291,11 @@ public class ResourcePackConvertConverter
                     writer.WriteLine($"  {feature}: {(supported ? "Yes" : "No")}");
             }
 
-            Console.WriteLine($"[INFO] Conversion report saved to: {reportPath}");
+            ReportProgress($"[INFO] Conversion report saved to: {reportPath}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[WARNING] Failed to generate conversion report: {ex.Message}");
+            ReportProgress($"[WARNING] Failed to generate conversion report: {ex.Message}");
         }
     }
 
@@ -320,7 +336,7 @@ public class ResourcePackConvertConverter
             var missingFile = "missing_mappings.json";
             if (!File.Exists(missingFile))
             {
-                Console.WriteLine("[INFO] No missing_mappings.json file found");
+                ReportProgress("[INFO] No missing_mappings.json file found");
                 return;
             }
 
@@ -364,11 +380,11 @@ public class ResourcePackConvertConverter
                     if (recursiveMatches.Length > 0)
                     {
                         var foundPath = Path.GetRelativePath(javaTexturesDir, recursiveMatches[0]);
-                        Console.WriteLine($"[WARNING] Texture '{textureName}' found at '{foundPath}' but not converted - possible mapping issue");
+                        ReportProgress($"[WARNING] Texture '{textureName}' found at '{foundPath}' but not converted - possible mapping issue");
                     }
                     else
                     {
-                        Console.WriteLine($"[WARNING] Texture '{textureName}' exists in pack but marked as missing - possible mapping issue");
+                        ReportProgress($"[WARNING] Texture '{textureName}' exists in pack but marked as missing - possible mapping issue");
                     }
                 }
                 else
@@ -379,20 +395,20 @@ public class ResourcePackConvertConverter
 
             if (codeIssues.Count > 0)
             {
-                Console.WriteLine($"[WARNING] Found {codeIssues.Count} textures that exist but weren't converted:");
+                ReportProgress($"[WARNING] Found {codeIssues.Count} textures that exist but weren't converted:");
                 foreach (var texture in codeIssues.Take(5))
-                    Console.WriteLine($"[WARNING]   - {texture}");
+                    ReportProgress($"[WARNING]   - {texture}");
                 if (codeIssues.Count > 5)
-                    Console.WriteLine($"[WARNING]   ... and {codeIssues.Count - 5} more");
-                Console.WriteLine("[WARNING] These may indicate mapping issues that need to be fixed");
+                    ReportProgress($"[WARNING]   ... and {codeIssues.Count - 5} more");
+                ReportProgress("[WARNING] These may indicate mapping issues that need to be fixed");
             }
 
             if (actuallyMissing.Count > 0)
-                Console.WriteLine($"[INFO] Confirmed {actuallyMissing.Count} textures are genuinely missing from the pack");
+                ReportProgress($"[INFO] Confirmed {actuallyMissing.Count} textures are genuinely missing from the pack");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERROR] Failed to validate missing mappings: {ex.Message}");
+            ReportProgress($"[ERROR] Failed to validate missing mappings: {ex.Message}");
         }
     }
 }

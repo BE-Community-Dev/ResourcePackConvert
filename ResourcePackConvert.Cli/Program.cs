@@ -10,7 +10,8 @@ var command = args[0].ToLower();
 
 try
 {
-    var converter = new ResourcePackConvertConverter();
+    var converter = new ResourcePackConvertConverter(
+        progress: new Progress<string>(msg => Console.WriteLine(msg)));
 
     switch (command)
     {

@@ -11,7 +11,7 @@ public class TextureConverter
     private readonly HashSet<string> _skippedFiles = new();
     private int _identityMappings = 0; // same name in both editions
 
-    public TextureConverter(string mappingsDir = "mappings")
+    public TextureConverter(string mappingsDir = "Mappings")
     {
         _mappingLoader = new MappingLoader(mappingsDir);
         _textureMappings = _mappingLoader.LoadAllMappings();

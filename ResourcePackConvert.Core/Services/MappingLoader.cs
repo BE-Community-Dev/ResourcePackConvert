@@ -8,12 +8,12 @@ public class MappingLoader
     private readonly string _mappingsDir;
     private readonly Dictionary<string, Dictionary<string, object>> _loadedMappings = new();
 
-    public MappingLoader(string mappingsDir = "mappings")
+    public MappingLoader(string mappingsDir = "Mappings")
     {
         // If the directory doesn't exist on disk, try to extract from embedded resources
         if (!Directory.Exists(mappingsDir))
         {
-            var extracted = EmbeddedResourceHelper.ExtractToTemp("mappings");
+            var extracted = EmbeddedResourceHelper.ExtractToTemp("Mappings");
             if (Directory.Exists(extracted) && Directory.GetFiles(extracted, "*.json").Length > 0)
             {
                 _mappingsDir = extracted;
@@ -37,7 +37,7 @@ public class MappingLoader
         if (!Directory.Exists(_mappingsDir))
         {
             // Final fallback: try to read directly from embedded resources (no extraction)
-            var embeddedContent = EmbeddedResourceHelper.ReadAllTextFromFolder("mappings");
+            var embeddedContent = EmbeddedResourceHelper.ReadAllTextFromFolder("Mappings");
             if (embeddedContent.Count > 0)
             {
                 Console.WriteLine($"[INFO] Reading {embeddedContent.Count} mapping files from embedded resources...");
