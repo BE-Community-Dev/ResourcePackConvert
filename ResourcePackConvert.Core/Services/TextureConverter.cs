@@ -48,7 +48,7 @@ public class TextureConverter
 
         if (!Directory.Exists(javaTexturesDir))
         {
-            Console.WriteLine($"[WARNING] Java textures directory not found: {javaTexturesDir}");
+            Console.WriteLine($@"[WARNING] Java textures directory not found: {javaTexturesDir}");
             return stats;
         }
 
@@ -63,7 +63,7 @@ public class TextureConverter
             }
             else
             {
-                Console.WriteLine($"[DEBUG] Unknown texture category '{javaDirName}' — copying as-is");
+                Console.WriteLine($@"[DEBUG] Unknown texture category '{javaDirName}' — copying as-is");
                 var bedrockSubDir = Path.Combine(bedrockTexturesDir, javaDirName);
                 stats.Add(ConvertTextureCategory(javaSubDir, bedrockSubDir, javaDirName));
             }
@@ -73,7 +73,7 @@ public class TextureConverter
             _mappingLoader.SaveMissingMappings(_missingFiles.ToList());
 
         if (_identityMappings > 0)
-            Console.WriteLine($"[INFO] {_identityMappings} textures use identity mapping (same filename in both editions)");
+            Console.WriteLine($@"[INFO] {_identityMappings} textures use identity mapping (same filename in both editions)");
 
         return stats;
     }
@@ -102,12 +102,12 @@ public class TextureConverter
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] Error converting {filePath}: {ex.Message}");
+                Console.WriteLine($@"[ERROR] Error converting {filePath}: {ex.Message}");
                 stats.Errors++;
             }
         }
 
-        Console.WriteLine($"[INFO] Converted {category}: {stats.Converted} files, {stats.Skipped} skipped, {stats.Missing} missing mappings");
+        Console.WriteLine($@"[INFO] Converted {category}: {stats.Converted} files, {stats.Skipped} skipped, {stats.Missing} missing mappings");
         return stats;
     }
 
@@ -139,7 +139,7 @@ public class TextureConverter
             {
                 // Fallback mapping changed the name — this is a real mapping gap.
                 _missingFiles.Add(originalName);
-                Console.WriteLine($"[DEBUG] No mapping found for {originalName}, using fallback: {mappedName}");
+                Console.WriteLine($@"[DEBUG] No mapping found for {originalName}, using fallback: {mappedName}");
             }
         }
 

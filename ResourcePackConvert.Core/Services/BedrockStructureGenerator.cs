@@ -36,7 +36,7 @@ public class BedrockStructureGenerator
 
     public void CreateBedrockStructure(string bedrockTemp)
     {
-        Console.WriteLine("[INFO] Creating Bedrock Edition directory structure...");
+        Console.WriteLine(@"[INFO] Creating Bedrock Edition directory structure...");
 
         foreach (var dirPath in _requiredDirectories)
         {
@@ -80,19 +80,19 @@ public class BedrockStructureGenerator
             if (enablePbr)
             {
                 manifestObj["capabilities"] = new[] { "pbr", "raytraced" };
-                Console.WriteLine("[INFO] Enabled PBR and raytraced capabilities in manifest");
+                Console.WriteLine(@"[INFO] Enabled PBR and raytraced capabilities in manifest");
             }
 
             var manifestPath = Path.Combine(bedrockTemp, "manifest.json");
             var json = JsonSerializer.Serialize(manifestObj, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(manifestPath, json);
 
-            Console.WriteLine($"[INFO] Generated manifest.json: {packName} v{string.Join(".", version)}");
+            Console.WriteLine($@"[INFO] Generated manifest.json: {packName} v{string.Join(".", version)}");
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERROR] Failed to generate manifest.json: {ex.Message}");
+            Console.WriteLine($@"[ERROR] Failed to generate manifest.json: {ex.Message}");
             return false;
         }
     }
@@ -131,11 +131,11 @@ public class BedrockStructureGenerator
                         Directory.CreateDirectory(destFolder);
 
                     File.WriteAllText(destPath, embeddedContent);
-                    Console.WriteLine($"[INFO] Extracted {Path.GetFileName(sourcePath)} from embedded resources");
+                    Console.WriteLine($@"[INFO] Extracted {Path.GetFileName(sourcePath)} from embedded resources");
                     return true;
                 }
 
-                Console.WriteLine($"[ERROR] Required file not found: {sourcePath} (resolved: {resolvedSource})");
+                Console.WriteLine($@"[ERROR] Required file not found: {sourcePath} (resolved: {resolvedSource})");
                 return false;
             }
 
@@ -144,12 +144,12 @@ public class BedrockStructureGenerator
                 Directory.CreateDirectory(destDir);
 
             File.Copy(resolvedSource, destPath, true);
-            Console.WriteLine($"[INFO] Copied {Path.GetFileName(sourcePath)} from required folder");
+            Console.WriteLine($@"[INFO] Copied {Path.GetFileName(sourcePath)} from required folder");
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERROR] Failed to copy {sourcePath}: {ex.Message}");
+            Console.WriteLine($@"[ERROR] Failed to copy {sourcePath}: {ex.Message}");
             return false;
         }
     }
@@ -163,18 +163,18 @@ public class BedrockStructureGenerator
             if (iconPath != null && File.Exists(iconPath))
             {
                 File.Copy(iconPath, packIconPath, true);
-                Console.WriteLine($"[INFO] Copied custom pack icon from {iconPath}");
+                Console.WriteLine($@"[INFO] Copied custom pack icon from {iconPath}");
             }
             else
             {
-                Console.WriteLine("[INFO] No custom icon provided, pack will use default Bedrock icon");
+                Console.WriteLine(@"[INFO] No custom icon provided, pack will use default Bedrock icon");
             }
 
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERROR] Failed to handle pack icon: {ex.Message}");
+            Console.WriteLine($@"[ERROR] Failed to handle pack icon: {ex.Message}");
             return false;
         }
     }
@@ -200,7 +200,7 @@ public class BedrockStructureGenerator
                     "## Converted Java Resource Pack\n" +
                     "## Language file converted from Java Edition\n");
 
-                Console.WriteLine("[INFO] Created basic en_US.lang file");
+                Console.WriteLine(@"[INFO] Created basic en_US.lang file");
             }
 
             // Generate languages.json
@@ -216,12 +216,12 @@ public class BedrockStructureGenerator
             var json = JsonSerializer.Serialize(languagesData, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(languagesPath, json);
 
-            Console.WriteLine("[INFO] Generated language files");
+            Console.WriteLine(@"[INFO] Generated language files");
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERROR] Failed to generate language files: {ex.Message}");
+            Console.WriteLine($@"[ERROR] Failed to generate language files: {ex.Message}");
             return false;
         }
     }
@@ -250,11 +250,11 @@ public class BedrockStructureGenerator
                 writer.WriteLine($"{key}={value}");
             }
 
-            Console.WriteLine($"[DEBUG] Converted language file: {Path.GetFileName(javaLangFile)} -> {Path.GetFileName(bedrockLangFile)}");
+            Console.WriteLine($@"[DEBUG] Converted language file: {Path.GetFileName(javaLangFile)} -> {Path.GetFileName(bedrockLangFile)}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[WARNING] Failed to convert language file {javaLangFile}: {ex.Message}");
+            Console.WriteLine($@"[WARNING] Failed to convert language file {javaLangFile}: {ex.Message}");
         }
     }
 

@@ -63,10 +63,10 @@ public class PbrConverter
             kvp.Value.ContainsKey("specular") || kvp.Value.ContainsKey("normal"))
             .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
-        Console.WriteLine($"[INFO] Detected {pbrSets.Count} PBR texture sets");
+        Console.WriteLine($@"[INFO] Detected {pbrSets.Count} PBR texture sets");
         foreach (var (setName, components) in pbrSets)
         {
-            Console.WriteLine($"[DEBUG]   {setName}: {string.Join(", ", components.Keys)}");
+            Console.WriteLine($@"[DEBUG]   {setName}: {string.Join(", ", components.Keys)}");
         }
 
         return pbrSets;
@@ -126,12 +126,12 @@ public class PbrConverter
             _conversionStats.SpecularConverted++;
             _conversionStats.MerGenerated++;
 
-            Console.WriteLine($"[DEBUG] Converted specular to MER: {Path.GetFileName(specularPath)} -> {Path.GetFileName(merPath)}");
+            Console.WriteLine($@"[DEBUG] Converted specular to MER: {Path.GetFileName(specularPath)} -> {Path.GetFileName(merPath)}");
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERROR] Failed to convert specular map {specularPath}: {ex.Message}");
+            Console.WriteLine($@"[ERROR] Failed to convert specular map {specularPath}: {ex.Message}");
             _conversionStats.Errors++;
             return false;
         }
@@ -180,12 +180,12 @@ public class PbrConverter
 
             _conversionStats.NormalConverted++;
 
-            Console.WriteLine($"[DEBUG] Converted normal map: {Path.GetFileName(normalPath)} -> {Path.GetFileName(outputPath)}");
+            Console.WriteLine($@"[DEBUG] Converted normal map: {Path.GetFileName(normalPath)} -> {Path.GetFileName(outputPath)}");
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERROR] Failed to convert normal map {normalPath}: {ex.Message}");
+            Console.WriteLine($@"[ERROR] Failed to convert normal map {normalPath}: {ex.Message}");
             _conversionStats.Errors++;
             return false;
         }
@@ -234,12 +234,12 @@ public class PbrConverter
 
             _conversionStats.TextureSetsCreated++;
 
-            Console.WriteLine($"[DEBUG] Created texture set JSON: {Path.GetFileName(jsonPath)}");
+            Console.WriteLine($@"[DEBUG] Created texture set JSON: {Path.GetFileName(jsonPath)}");
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERROR] Failed to create texture set JSON for {textureName}: {ex.Message}");
+            Console.WriteLine($@"[ERROR] Failed to create texture set JSON for {textureName}: {ex.Message}");
             _conversionStats.Errors++;
             return false;
         }
@@ -248,21 +248,21 @@ public class PbrConverter
     public PbrStats ConvertPbrTextures(string javaTexturesDir, string bedrockTexturesDir,
         Dictionary<string, string>? textureMappings = null)
     {
-        Console.WriteLine("[INFO] Starting PBR texture conversion...");
+        Console.WriteLine(@"[INFO] Starting PBR texture conversion...");
 
         var pbrSets = DetectPbrTextures(javaTexturesDir);
 
         if (pbrSets.Count == 0)
         {
-            Console.WriteLine("[INFO] No PBR textures detected");
+            Console.WriteLine(@"[INFO] No PBR textures detected");
             return _conversionStats;
         }
 
-        Console.WriteLine($"[INFO] Converting {pbrSets.Count} PBR texture sets...");
+        Console.WriteLine($@"[INFO] Converting {pbrSets.Count} PBR texture sets...");
 
         foreach (var (setName, components) in pbrSets)
         {
-            Console.WriteLine($"[DEBUG] Processing PBR set: {setName}");
+            Console.WriteLine($@"[DEBUG] Processing PBR set: {setName}");
 
             var diffuseName = $"{setName}.png";
             string bedrockBaseName;
@@ -306,12 +306,12 @@ public class PbrConverter
             }
         }
 
-        Console.WriteLine("[INFO] PBR conversion completed:");
-        Console.WriteLine($"[INFO]   Specular maps converted: {_conversionStats.SpecularConverted}");
-        Console.WriteLine($"[INFO]   Normal maps converted: {_conversionStats.NormalConverted}");
-        Console.WriteLine($"[INFO]   MER maps generated: {_conversionStats.MerGenerated}");
-        Console.WriteLine($"[INFO]   Texture set JSONs created: {_conversionStats.TextureSetsCreated}");
-        Console.WriteLine($"[INFO]   Errors: {_conversionStats.Errors}");
+        Console.WriteLine(@"[INFO] PBR conversion completed:");
+        Console.WriteLine($@"[INFO]   Specular maps converted: {_conversionStats.SpecularConverted}");
+        Console.WriteLine($@"[INFO]   Normal maps converted: {_conversionStats.NormalConverted}");
+        Console.WriteLine($@"[INFO]   MER maps generated: {_conversionStats.MerGenerated}");
+        Console.WriteLine($@"[INFO]   Texture set JSONs created: {_conversionStats.TextureSetsCreated}");
+        Console.WriteLine($@"[INFO]   Errors: {_conversionStats.Errors}");
 
         return _conversionStats;
     }

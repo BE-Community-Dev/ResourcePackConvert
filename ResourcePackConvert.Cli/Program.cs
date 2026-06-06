@@ -26,14 +26,14 @@ try
             return HandleValidate(converter);
 
         default:
-            Console.WriteLine($"Unknown command: {args[0]}");
+            Console.WriteLine($@"Unknown command: {args[0]}");
             PrintHelp();
             return 1;
     }
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"[ERROR] Error: {ex.Message}");
+    Console.WriteLine($@"[ERROR] Error: {ex.Message}");
     return 1;
 }
 
@@ -77,12 +77,12 @@ static int HandleConvert(ResourcePackConvertConverter converter, string[] args)
 
     if (input == null || output == null)
     {
-        Console.WriteLine("Usage: ResourcePackConvert.Converter convert <input.zip> <output.mcpack> [options]");
-        Console.WriteLine("Options:");
-        Console.WriteLine("  --pack-name NAME           Custom pack name");
-        Console.WriteLine("  --pack-description DESC    Custom pack description");
-        Console.WriteLine("  --no-validation            Skip input pack validation");
-        Console.WriteLine("  --disable-pbr              Disable PBR texture conversion");
+        Console.WriteLine(@"Usage: ResourcePackConvert.Converter convert <input.zip> <output.mcpack> [options]");
+        Console.WriteLine(@"Options:");
+        Console.WriteLine(@"  --pack-name NAME           Custom pack name");
+        Console.WriteLine(@"  --pack-description DESC    Custom pack description");
+        Console.WriteLine(@"  --no-validation            Skip input pack validation");
+        Console.WriteLine(@"  --disable-pbr              Disable PBR texture conversion");
         return 1;
     }
 
@@ -99,23 +99,23 @@ static int HandleInfo(ResourcePackConvertConverter converter)
     var info = converter.GetAvailableMappingsInfo();
 
     Console.WriteLine();
-    Console.WriteLine("=== ResourcePackConvert Converter Mapping Information ===");
-    Console.WriteLine($"Total mappings: {info["total_mappings"]}");
-    Console.WriteLine($"Categories: {info["category_count"]}");
+    Console.WriteLine(@"=== ResourcePackConvert Converter Mapping Information ===");
+    Console.WriteLine($@"Total mappings: {info["total_mappings"]}");
+    Console.WriteLine($@"Categories: {info["category_count"]}");
     Console.WriteLine();
-    Console.WriteLine("Category details:");
+    Console.WriteLine(@"Category details:");
 
     var categories = (Dictionary<string, object>)info["categories"];
     foreach (var (category, details) in categories)
     {
         var detail = (Dictionary<string, object>)details;
-        Console.WriteLine($"  {category}: {detail["count"]} mappings");
+        Console.WriteLine($@"  {category}: {detail["count"]} mappings");
 
         if (detail.TryGetValue("sample_mappings", out var samples) &&
             samples is Dictionary<string, string> sampleDict &&
             sampleDict.Count > 0)
         {
-            Console.WriteLine($"    Sample: {string.Join(", ", sampleDict.Keys.Take(3))}");
+            Console.WriteLine($@"    Sample: {string.Join(", ", sampleDict.Keys.Take(3))}");
         }
     }
 
@@ -126,25 +126,25 @@ static int HandleInfo(ResourcePackConvertConverter converter)
 static int HandleValidate(ResourcePackConvertConverter converter)
 {
     Console.WriteLine();
-    Console.WriteLine("=== Validating Mappings ===");
+    Console.WriteLine(@"=== Validating Mappings ===");
 
     var validation = converter.ValidateMappings();
-    Console.WriteLine($"Total mappings: {validation["total_mappings"]}");
-    Console.WriteLine($"Duplicate mappings: {validation["duplicate_count"]}");
+    Console.WriteLine($@"Total mappings: {validation["total_mappings"]}");
+    Console.WriteLine($@"Duplicate mappings: {validation["duplicate_count"]}");
 
     if (validation.TryGetValue("duplicates", out var dupObj) &&
         dupObj is Dictionary<string, List<string>> duplicates &&
         duplicates.Count > 0)
     {
-        Console.WriteLine("Duplicates found:");
+        Console.WriteLine(@"Duplicates found:");
         foreach (var (javaTexture, bedrockTextures) in duplicates.Take(10))
         {
-            Console.WriteLine($"  {javaTexture} -> [{string.Join(", ", bedrockTextures.Take(3))}]");
+            Console.WriteLine($@"  {javaTexture} -> [{string.Join(", ", bedrockTextures.Take(3))}]");
         }
     }
 
     var cats = (List<string>)validation["categories"];
-    Console.WriteLine($"Categories: {string.Join(", ", cats)}");
+    Console.WriteLine($@"Categories: {string.Join(", ", cats)}");
     Console.WriteLine();
 
     return 0;

@@ -45,7 +45,7 @@ public static class EmbeddedResourceHelper
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[WARNING] Failed to read embedded resource {resourceName}: {ex.Message}");
+                Console.WriteLine($@"[WARNING] Failed to read embedded resource {resourceName}: {ex.Message}");
             }
         }
 
@@ -129,7 +129,7 @@ public static class EmbeddedResourceHelper
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[WARNING] Failed to extract {resourceName}: {ex.Message}");
+                Console.WriteLine($@"[WARNING] Failed to extract {resourceName}: {ex.Message}");
             }
         }
 

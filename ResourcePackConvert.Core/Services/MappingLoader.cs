@@ -17,7 +17,7 @@ public class MappingLoader
             if (Directory.Exists(extracted) && Directory.GetFiles(extracted, "*.json").Length > 0)
             {
                 _mappingsDir = extracted;
-                Console.WriteLine($"[INFO] Extracted mappings from embedded resources to: {extracted}");
+                Console.WriteLine($@"[INFO] Extracted mappings from embedded resources to: {extracted}");
             }
             else
             {
@@ -40,7 +40,7 @@ public class MappingLoader
             var embeddedContent = EmbeddedResourceHelper.ReadAllTextFromFolder("Mappings");
             if (embeddedContent.Count > 0)
             {
-                Console.WriteLine($"[INFO] Reading {embeddedContent.Count} mapping files from embedded resources...");
+                Console.WriteLine($@"[INFO] Reading {embeddedContent.Count} mapping files from embedded resources...");
                 foreach (var (resourceName, content) in embeddedContent)
                 {
                     try
@@ -51,25 +51,25 @@ public class MappingLoader
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[ERROR] Failed to parse embedded mapping {resourceName}: {ex.Message}");
+                        Console.WriteLine($@"[ERROR] Failed to parse embedded mapping {resourceName}: {ex.Message}");
                     }
                 }
-                Console.WriteLine($"[INFO] Total mappings loaded: {combinedMappings.Count}");
+                Console.WriteLine($@"[INFO] Total mappings loaded: {combinedMappings.Count}");
                 return combinedMappings;
             }
 
-            Console.WriteLine($"[WARNING] Mappings directory not found: {_mappingsDir}");
+            Console.WriteLine($@"[WARNING] Mappings directory not found: {_mappingsDir}");
             return combinedMappings;
         }
 
         var mappingFiles = Directory.GetFiles(_mappingsDir, "*.json");
         if (mappingFiles.Length == 0)
         {
-            Console.WriteLine($"[WARNING] No mapping files found in {_mappingsDir}");
+            Console.WriteLine($@"[WARNING] No mapping files found in {_mappingsDir}");
             return combinedMappings;
         }
 
-        Console.WriteLine($"[INFO] Loading {mappingFiles.Length} mapping files...");
+        Console.WriteLine($@"[INFO] Loading {mappingFiles.Length} mapping files...");
 
         foreach (var mappingFile in mappingFiles)
         {
@@ -110,11 +110,11 @@ public class MappingLoader
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] Failed to load mapping file {mappingFile}: {ex.Message}");
+                Console.WriteLine($@"[ERROR] Failed to load mapping file {mappingFile}: {ex.Message}");
             }
         }
 
-        Console.WriteLine($"[INFO] Total mappings loaded: {combinedMappings.Count}");
+        Console.WriteLine($@"[INFO] Total mappings loaded: {combinedMappings.Count}");
         return combinedMappings;
     }
 
@@ -140,12 +140,12 @@ public class MappingLoader
         }
         catch (JsonException ex)
         {
-            Console.WriteLine($"[ERROR] Invalid JSON in mapping file {filePath}: {ex.Message}");
+            Console.WriteLine($@"[ERROR] Invalid JSON in mapping file {filePath}: {ex.Message}");
             return null;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERROR] Error loading mapping file {filePath}: {ex.Message}");
+            Console.WriteLine($@"[ERROR] Error loading mapping file {filePath}: {ex.Message}");
             return null;
         }
     }
@@ -235,7 +235,7 @@ public class MappingLoader
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[WARNING] Failed to save missing mappings: {ex.Message}");
+            Console.WriteLine($@"[WARNING] Failed to save missing mappings: {ex.Message}");
         }
     }
 
@@ -275,7 +275,7 @@ public class MappingLoader
         }
         catch (JsonException ex)
         {
-            Console.WriteLine($"[ERROR] Invalid JSON in embedded resource {resourceName}: {ex.Message}");
+            Console.WriteLine($@"[ERROR] Invalid JSON in embedded resource {resourceName}: {ex.Message}");
             return null;
         }
     }

@@ -14,45 +14,45 @@ public class PackManager
         {
             if (!File.Exists(inputPath))
             {
-                Console.WriteLine($"[ERROR] Input file does not exist: {inputPath}");
+                Console.WriteLine($@"[ERROR] Input file does not exist: {inputPath}");
                 return null;
             }
 
             if (!inputPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
             {
-                Console.WriteLine("[ERROR] Input file must be a .zip file");
+                Console.WriteLine(@"[ERROR] Input file must be a .zip file");
                 return null;
             }
 
-            Console.WriteLine($"[INFO] Extracting Java resource pack: {Path.GetFileName(inputPath)}");
+            Console.WriteLine($@"[INFO] Extracting Java resource pack: {Path.GetFileName(inputPath)}");
 
             ZipFile.ExtractToDirectory(inputPath, extractDir);
 
             var assetsDir = FindAssetsDirectory(extractDir);
             if (assetsDir == null)
             {
-                Console.WriteLine("[ERROR] Could not find assets/minecraft directory in the Java resource pack");
+                Console.WriteLine(@"[ERROR] Could not find assets/minecraft directory in the Java resource pack");
                 return null;
             }
 
             var minecraftDir = Path.Combine(assetsDir, "minecraft");
             if (!Directory.Exists(minecraftDir))
             {
-                Console.WriteLine("[ERROR] Could not find minecraft directory in assets");
+                Console.WriteLine(@"[ERROR] Could not find minecraft directory in assets");
                 return null;
             }
 
-            Console.WriteLine($"[INFO] Found minecraft directory: {minecraftDir}");
+            Console.WriteLine($@"[INFO] Found minecraft directory: {minecraftDir}");
             return minecraftDir;
         }
         catch (InvalidDataException)
         {
-            Console.WriteLine($"[ERROR] Invalid zip file: {inputPath}");
+            Console.WriteLine($@"[ERROR] Invalid zip file: {inputPath}");
             return null;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERROR] Failed to extract Java resource pack: {ex.Message}");
+            Console.WriteLine($@"[ERROR] Failed to extract Java resource pack: {ex.Message}");
             return null;
         }
     }
@@ -98,7 +98,7 @@ public class PackManager
             if (!string.IsNullOrEmpty(outputDir))
                 Directory.CreateDirectory(outputDir);
 
-            Console.WriteLine($"[INFO] Creating .mcpack file: {outputPath}");
+            Console.WriteLine($@"[INFO] Creating .mcpack file: {outputPath}");
 
             var fileCount = 0;
             using var zip = ZipFile.Open(outputPath, ZipArchiveMode.Create);
@@ -111,20 +111,20 @@ public class PackManager
                 fileCount++;
 
                 if (fileCount % 100 == 0)
-                    Console.WriteLine($"[DEBUG] Added {fileCount} files to .mcpack");
+                    Console.WriteLine($@"[DEBUG] Added {fileCount} files to .mcpack");
             }
 
             var fileSize = new FileInfo(outputPath).Length;
             var sizeMb = fileSize / (1024.0 * 1024.0);
 
-            Console.WriteLine($"[INFO] Created .mcpack file: {outputPath}");
-            Console.WriteLine($"[INFO] Pack size: {sizeMb:F2} MB ({fileCount} files)");
+            Console.WriteLine($@"[INFO] Created .mcpack file: {outputPath}");
+            Console.WriteLine($@"[INFO] Pack size: {sizeMb:F2} MB ({fileCount} files)");
 
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERROR] Failed to create .mcpack file: {ex.Message}");
+            Console.WriteLine($@"[ERROR] Failed to create .mcpack file: {ex.Message}");
             return false;
         }
     }
@@ -238,7 +238,7 @@ public class PackManager
                 }
                 catch (JsonException)
                 {
-                    Console.WriteLine("[WARNING] Could not parse pack.mcmeta");
+                    Console.WriteLine(@"[WARNING] Could not parse pack.mcmeta");
                     packInfo.Name = Path.GetFileNameWithoutExtension(inputPath);
                 }
             }
@@ -249,7 +249,7 @@ public class PackManager
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ERROR] Failed to get pack info: {ex.Message}");
+            Console.WriteLine($@"[ERROR] Failed to get pack info: {ex.Message}");
         }
 
         return packInfo;
@@ -272,11 +272,11 @@ public class PackManager
                 try
                 {
                     Directory.Delete(tempDir, true);
-                    Console.WriteLine($"[DEBUG] Cleaned up temporary directory: {tempDir}");
+                    Console.WriteLine($@"[DEBUG] Cleaned up temporary directory: {tempDir}");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[WARNING] Failed to clean up {tempDir}: {ex.Message}");
+                    Console.WriteLine($@"[WARNING] Failed to clean up {tempDir}: {ex.Message}");
                 }
             }
         }
@@ -305,7 +305,7 @@ public class PackManager
                     var packIconDest = Path.Combine(bedrockTemp, "pack_icon.png");
                     File.Copy(packPng, packIconDest, true);
                     stats["pack_icon"] = 1;
-                    Console.WriteLine($"[INFO] Copied pack.png as pack_icon.png from {packPng}");
+                    Console.WriteLine($@"[INFO] Copied pack.png as pack_icon.png from {packPng}");
                     break;
                 }
             }
@@ -316,7 +316,7 @@ public class PackManager
             if (Directory.Exists(javaSounds))
             {
                 stats["sounds"] = CopyDirectoryRecursive(javaSounds, bedrockSounds);
-                Console.WriteLine($"[INFO] Copied {stats["sounds"]} sound files");
+                Console.WriteLine($@"[INFO] Copied {stats["sounds"]} sound files");
             }
 
             // --- 3. Copy models ---
@@ -325,7 +325,7 @@ public class PackManager
             if (Directory.Exists(javaModels))
             {
                 stats["models"] = CopyDirectoryRecursive(javaModels, bedrockModels);
-                Console.WriteLine($"[INFO] Copied {stats["models"]} model files");
+                Console.WriteLine($@"[INFO] Copied {stats["models"]} model files");
             }
 
             // --- 4. Copy other dirs/files: fonts/, gpu_warnlist.json, regional_compliancies.json ---
@@ -357,7 +357,7 @@ public class PackManager
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[WARNING] Failed to copy some assets: {ex.Message}");
+            Console.WriteLine($@"[WARNING] Failed to copy some assets: {ex.Message}");
         }
 
         return stats;
