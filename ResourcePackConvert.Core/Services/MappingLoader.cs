@@ -177,7 +177,7 @@ public class MappingLoader
                 }
             }
 
-            // Also read the "mappings" sub-object (Format A)
+            // Also read the "mappings" sub-object (if present)
             if (data.TryGetValue("mappings", out var mappingsObj) &&
                 mappingsObj is JsonElement mappingsElement &&
                 mappingsElement.ValueKind == JsonValueKind.Object)
