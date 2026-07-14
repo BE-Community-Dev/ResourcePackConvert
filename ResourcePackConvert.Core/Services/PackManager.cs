@@ -100,6 +100,8 @@ public class PackManager
 
             Console.WriteLine($@"[INFO] Creating .mcpack file: {outputPath}");
 
+            if (File.Exists(outputPath)) File.Delete(outputPath);
+
             var fileCount = 0;
             using var zip = ZipFile.Open(outputPath, ZipArchiveMode.Create);
 

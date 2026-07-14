@@ -3229,5 +3229,24 @@
   {"warped_stem_top_s.png": "warped_stem_top_s.png"},
   {"warped_wart_block.png": "warped_wart_block.png"},
   {"warped_wart_block_n.png": "warped_wart_block_normal.png"},
-  {"warped_wart_block_s.png": "warped_wart_block_mer.png"}
+  {"warped_wart_block_s.png": "warped_wart_block_mer.png"},
+
+  {"chainmail_layer_1.png": "chain_1.png"},
+  {"chainmail_layer_2.png": "chain_2.png"},
+  {"diamond_layer_1.png": "diamond_1.png"},
+  {"diamond_layer_2.png": "diamond_2.png"},
+  {"gold_layer_1.png": "gold_1.png"},
+  {"gold_layer_2.png": "gold_2.png"},
+  {"iron_layer_1.png": "iron_1.png"},
+  {"iron_layer_2.png": "iron_2.png"},
+  {"leather_layer_1.png": "leather_1.png"},
+  {"leather_layer_2.png": "leather_2.png"},
+  {"netherite_layer_1.png": "netherite_1.png"},
+  {"netherite_layer_2.png": "netherite_2.png"},
+  {"turtle_layer_1.png": "turtle_1.png"},
+  
+  {"drowned.png": "bug1.png"},
+  {"drowned_outer_layer.png": "bug2.png"},
+  {"husk.png": "bug3.png"},
+  {"zombie.png": "bug4.png"}
 ]
