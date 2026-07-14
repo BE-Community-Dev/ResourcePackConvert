@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text.Json;
 
 namespace ResourcePackConvert.Core.Services;
@@ -10,24 +9,7 @@ public class MappingLoader
 
     public MappingLoader(string mappingsDir = "Mappings")
     {
-        // If the directory doesn't exist on disk, try to extract from embedded resources
-        if (!Directory.Exists(mappingsDir))
-        {
-            var extracted = EmbeddedResourceHelper.ExtractToTemp("Mappings");
-            if (Directory.Exists(extracted) && Directory.GetFiles(extracted, "*.json").Length > 0)
-            {
-                _mappingsDir = extracted;
-                Console.WriteLine($@"[INFO] Extracted mappings from embedded resources to: {extracted}");
-            }
-            else
-            {
-                _mappingsDir = mappingsDir;
-            }
-        }
-        else
-        {
-            _mappingsDir = mappingsDir;
-        }
+        _mappingsDir = mappingsDir;
     }
 
     public Dictionary<string, string> LoadAllMappings()
@@ -36,37 +18,14 @@ public class MappingLoader
 
         if (!Directory.Exists(_mappingsDir))
         {
-            // Final fallback: try to read directly from embedded resources (no extraction)
-            var embeddedContent = EmbeddedResourceHelper.ReadAllTextFromFolder("Mappings");
-            if (embeddedContent.Count > 0)
-            {
-                Console.WriteLine($@"[INFO] Reading {embeddedContent.Count} mapping files from embedded resources...");
-                foreach (var (resourceName, content) in embeddedContent)
-                {
-                    try
-                    {
-                        var categoryMappings = ParseMappingJson(content, resourceName);
-                        if (categoryMappings == null) continue;
-                        MergeIntoCombined(combinedMappings, categoryMappings);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($@"[ERROR] Failed to parse embedded mapping {resourceName}: {ex.Message}");
-                    }
-                }
-                Console.WriteLine($@"[INFO] Total mappings loaded: {combinedMappings.Count}");
-                return combinedMappings;
-            }
-
-            Console.WriteLine($@"[WARNING] Mappings directory not found: {_mappingsDir}");
-            return combinedMappings;
+            return LoadEmbeddedMappings(combinedMappings);
         }
 
         var mappingFiles = Directory.GetFiles(_mappingsDir, "*.json");
         if (mappingFiles.Length == 0)
         {
             Console.WriteLine($@"[WARNING] No mapping files found in {_mappingsDir}");
-            return combinedMappings;
+            return LoadEmbeddedMappings(combinedMappings);
         }
 
         Console.WriteLine($@"[INFO] Loading {mappingFiles.Length} mapping files...");
@@ -118,6 +77,35 @@ public class MappingLoader
         return combinedMappings;
     }
 
+    private Dictionary<string, string> LoadEmbeddedMappings(Dictionary<string, string> combinedMappings)
+    {
+        var embeddedContent = EmbeddedResourceHelper.ReadAllTextFromFolder("Mappings");
+        if (embeddedContent.Count == 0)
+        {
+            Console.WriteLine($@"[WARNING] Mappings directory not found and no embedded mappings are available: {_mappingsDir}");
+            return combinedMappings;
+        }
+
+        Console.WriteLine($@"[INFO] Reading {embeddedContent.Count} mapping files from embedded resources...");
+        foreach (var (resourceName, content) in embeddedContent)
+        {
+            try
+            {
+                var categoryMappings = ParseMappingJson(content, resourceName);
+                if (categoryMappings == null) continue;
+                _loadedMappings[GetCategory(categoryMappings, resourceName)] = categoryMappings;
+                MergeIntoCombined(combinedMappings, categoryMappings);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($@"[ERROR] Failed to parse embedded mapping {resourceName}: {ex.Message}");
+            }
+        }
+
+        Console.WriteLine($@"[INFO] Total mappings loaded: {combinedMappings.Count}");
+        return combinedMappings;
+    }
+
     public Dictionary<string, object>? LoadMappingFile(string filePath)
     {
         try
@@ -157,6 +145,8 @@ public class MappingLoader
             var categoryFile = Path.Combine(_mappingsDir, $"{category}.json");
             if (File.Exists(categoryFile))
                 LoadMappingFile(categoryFile);
+            else
+                LoadAllMappings();
         }
 
         if (_loadedMappings.TryGetValue(category, out var data))
@@ -198,6 +188,9 @@ public class MappingLoader
 
     public List<string> GetCategories()
     {
+        if (_loadedMappings.Count == 0)
+            LoadAllMappings();
+
         return _loadedMappings.Keys.ToList();
     }
 
@@ -278,6 +271,18 @@ public class MappingLoader
             Console.WriteLine($@"[ERROR] Invalid JSON in embedded resource {resourceName}: {ex.Message}");
             return null;
         }
+    }
+
+    private static string GetCategory(Dictionary<string, object> data, string resourceName)
+    {
+        if (data.TryGetValue("category", out var category))
+            return category.ToString()!;
+
+        var nameWithoutExtension = resourceName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
+            ? resourceName[..^5]
+            : resourceName;
+        var separatorIndex = nameWithoutExtension.LastIndexOf('.');
+        return separatorIndex >= 0 ? nameWithoutExtension[(separatorIndex + 1)..] : nameWithoutExtension;
     }
 
     /// <summary>

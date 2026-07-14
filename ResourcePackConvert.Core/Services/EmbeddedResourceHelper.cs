@@ -1,11 +1,9 @@
-using System.Reflection;
 using System.Text;
 
 namespace ResourcePackConvert.Core.Services;
 
 /// <summary>
-/// Helper for reading embedded resources from the entry assembly.
-/// Supports single-file publish scenarios where data files are compiled into the EXE.
+/// Helper for reading resources embedded in ResourcePackConvert.Core.
 /// </summary>
 public static class EmbeddedResourceHelper
 {
@@ -17,7 +15,7 @@ public static class EmbeddedResourceHelper
     public static Dictionary<string, string> ReadAllTextFromFolder(string folderPrefix)
     {
         var result = new Dictionary<string, string>();
-        var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
+        var assembly = typeof(EmbeddedResourceHelper).Assembly;
 
         var prefix = folderPrefix.EndsWith('.') ? folderPrefix : folderPrefix + ".";
         var allResources = assembly.GetManifestResourceNames();
@@ -57,7 +55,7 @@ public static class EmbeddedResourceHelper
     /// </summary>
     public static List<string> GetResourceNames(string folderPrefix)
     {
-        var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
+        var assembly = typeof(EmbeddedResourceHelper).Assembly;
         var prefix = folderPrefix.EndsWith('.') ? folderPrefix : folderPrefix + ".";
 
         return assembly.GetManifestResourceNames()
@@ -72,7 +70,7 @@ public static class EmbeddedResourceHelper
     /// </summary>
     public static string? ReadResourceText(string resourceName)
     {
-        var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
+        var assembly = typeof(EmbeddedResourceHelper).Assembly;
 
         // Try exact match first
         using var stream = assembly.GetManifestResourceStream(resourceName);
@@ -99,7 +97,7 @@ public static class EmbeddedResourceHelper
     /// </summary>
     public static string ExtractToTemp(string folderPrefix)
     {
-        var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
+        var assembly = typeof(EmbeddedResourceHelper).Assembly;
         var prefix = folderPrefix.EndsWith('.') ? folderPrefix : folderPrefix + ".";
 
         var tempDir = Path.Combine(Path.GetTempPath(), $"ResourcePackConvert_{folderPrefix}_{Guid.NewGuid():N}");

@@ -4,10 +4,6 @@
     <ProjectReference Include="..\ResourcePackConvert.Core\ResourcePackConvert.Core.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="Mappings\**\*" Link="Mappings\%(RecursiveDir)%(Filename)%(Extension)" />
-  </ItemGroup>
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
