@@ -16,149 +16,115 @@ public class MappingLoader
     {
         var combinedMappings = new Dictionary<string, string>();
 
-        if (!Directory.Exists(_mappingsDir))
+        var mappingFile = Path.Combine(_mappingsDir, "textures_mappings.json");
+        if (File.Exists(mappingFile))
         {
-            return LoadEmbeddedMappings(combinedMappings);
+            Console.WriteLine($@"[INFO] Loading textures_mappings.json...");
+            combinedMappings = LoadTextureMappingsFile(mappingFile);
+        }
+        else if (Directory.Exists(_mappingsDir))
+        {
+            Console.WriteLine($@"[WARNING] textures_mappings.json not found in {_mappingsDir}");
+        }
+        else
+        {
+            combinedMappings = LoadEmbeddedMappings();
         }
 
-        var mappingFiles = Directory.GetFiles(_mappingsDir, "*.json");
-        if (mappingFiles.Length == 0)
+        // Populate _loadedMappings for backward compatibility
+        if (combinedMappings.Count > 0 && !_loadedMappings.ContainsKey("textures"))
         {
-            Console.WriteLine($@"[WARNING] No mapping files found in {_mappingsDir}");
-            return LoadEmbeddedMappings(combinedMappings);
-        }
-
-        Console.WriteLine($@"[INFO] Loading {mappingFiles.Length} mapping files...");
-
-        foreach (var mappingFile in mappingFiles)
-        {
-            try
-            {
-                var categoryMappings = LoadMappingFile(mappingFile);
-                if (categoryMappings == null) continue;
-
-                // Read ALL string→string pairs from the root level (Format B)
-                // AND from the "mappings" sub-object (Format A)
-                // Some files have BOTH — we read both so nothing is missed.
-                foreach (var kvp in categoryMappings)
-                {
-                    // Skip known metadata keys
-                    if (kvp.Key is "category" or "description" or "mappings")
-                        continue;
-
-                    if (kvp.Value is JsonElement elem && elem.ValueKind == JsonValueKind.String)
-                    {
-                        var value = elem.GetString();
-                        if (value != null)
-                            combinedMappings[kvp.Key] = value;
-                    }
-                }
-
-                // Also read the "mappings" sub-object (if present)
-                if (categoryMappings.TryGetValue("mappings", out var mappingsObj) &&
-                    mappingsObj is JsonElement mappingsElement &&
-                    mappingsElement.ValueKind == JsonValueKind.Object)
-                {
-                    foreach (var prop in mappingsElement.EnumerateObject())
-                    {
-                        var value = prop.Value.GetString();
-                        if (value != null)
-                            combinedMappings[prop.Name] = value;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($@"[ERROR] Failed to load mapping file {mappingFile}: {ex.Message}");
-            }
+            var data = new Dictionary<string, object>();
+            foreach (var kvp in combinedMappings)
+                data[kvp.Key] = JsonDocument.Parse($@"""{kvp.Value}""").RootElement.Clone();
+            _loadedMappings["textures"] = data;
         }
 
         Console.WriteLine($@"[INFO] Total mappings loaded: {combinedMappings.Count}");
         return combinedMappings;
     }
 
-    private Dictionary<string, string> LoadEmbeddedMappings(Dictionary<string, string> combinedMappings)
+    private static Dictionary<string, string> LoadTextureMappingsFile(string filePath)
     {
-        var embeddedContent = EmbeddedResourceHelper.ReadAllTextFromFolder("Mappings");
-        if (embeddedContent.Count == 0)
+        var mappings = new Dictionary<string, string>();
+        var json = File.ReadAllText(filePath);
+        using var doc = JsonDocument.Parse(json);
+
+        if (doc.RootElement.ValueKind != JsonValueKind.Array)
         {
-            Console.WriteLine($@"[WARNING] Mappings directory not found and no embedded mappings are available: {_mappingsDir}");
-            return combinedMappings;
+            Console.WriteLine($@"[ERROR] textures_mappings.json must be a JSON array, got {doc.RootElement.ValueKind}");
+            return mappings;
         }
 
-        Console.WriteLine($@"[INFO] Reading {embeddedContent.Count} mapping files from embedded resources...");
-        foreach (var (resourceName, content) in embeddedContent)
+        foreach (var element in doc.RootElement.EnumerateArray())
         {
-            try
+            if (element.ValueKind != JsonValueKind.Object) continue;
+            foreach (var prop in element.EnumerateObject())
             {
-                var categoryMappings = ParseMappingJson(content, resourceName);
-                if (categoryMappings == null) continue;
-                _loadedMappings[GetCategory(categoryMappings, resourceName)] = categoryMappings;
-                MergeIntoCombined(combinedMappings, categoryMappings);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($@"[ERROR] Failed to parse embedded mapping {resourceName}: {ex.Message}");
+                var value = prop.Value.GetString();
+                if (value != null)
+                    mappings[prop.Name] = value;
             }
         }
 
-        Console.WriteLine($@"[INFO] Total mappings loaded: {combinedMappings.Count}");
-        return combinedMappings;
+        return mappings;
     }
 
-    public Dictionary<string, object>? LoadMappingFile(string filePath)
+    private Dictionary<string, string> LoadEmbeddedMappings()
     {
+        var content = EmbeddedResourceHelper.ReadResourceText("textures_mappings.json");
+        if (content == null)
+        {
+            Console.WriteLine($@"[WARNING] Embedded textures_mappings.json not found");
+            return new Dictionary<string, string>();
+        }
+
         try
         {
-            var json = File.ReadAllText(filePath);
-            using var doc = JsonDocument.Parse(json);
-            var data = new Dictionary<string, object>();
-
-            foreach (var prop in doc.RootElement.EnumerateObject())
-            {
-                data[prop.Name] = prop.Value.Clone();
-            }
-
-            var category = data.TryGetValue("category", out var catObj)
-                ? catObj.ToString()
-                : Path.GetFileNameWithoutExtension(filePath);
-
-            _loadedMappings[category!] = data;
-            return data;
-        }
-        catch (JsonException ex)
-        {
-            Console.WriteLine($@"[ERROR] Invalid JSON in mapping file {filePath}: {ex.Message}");
-            return null;
+            return ParseTextureMappingsJson(content);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($@"[ERROR] Error loading mapping file {filePath}: {ex.Message}");
-            return null;
+            Console.WriteLine($@"[ERROR] Failed to parse embedded textures_mappings.json: {ex.Message}");
+            return new Dictionary<string, string>();
         }
+    }
+
+    private static Dictionary<string, string> ParseTextureMappingsJson(string json)
+    {
+        var mappings = new Dictionary<string, string>();
+        using var doc = JsonDocument.Parse(json);
+
+        if (doc.RootElement.ValueKind != JsonValueKind.Array)
+        {
+            Console.WriteLine($@"[ERROR] textures_mappings.json must be a JSON array, got {doc.RootElement.ValueKind}");
+            return mappings;
+        }
+
+        foreach (var element in doc.RootElement.EnumerateArray())
+        {
+            if (element.ValueKind != JsonValueKind.Object) continue;
+            foreach (var prop in element.EnumerateObject())
+            {
+                var value = prop.Value.GetString();
+                if (value != null)
+                    mappings[prop.Name] = value;
+            }
+        }
+
+        return mappings;
     }
 
     public Dictionary<string, string> GetMappingByCategory(string category)
     {
-        if (!_loadedMappings.TryGetValue(category, out _))
-        {
-            var categoryFile = Path.Combine(_mappingsDir, $"{category}.json");
-            if (File.Exists(categoryFile))
-                LoadMappingFile(categoryFile);
-            else
-                LoadAllMappings();
-        }
+        if (_loadedMappings.Count == 0)
+            LoadAllMappings();
 
         if (_loadedMappings.TryGetValue(category, out var data))
         {
             var result = new Dictionary<string, string>();
-
-            // Read root-level string→string pairs (Format B)
             foreach (var kvp in data)
             {
-                if (kvp.Key is "category" or "description" or "mappings")
-                    continue;
-
                 if (kvp.Value is JsonElement elem && elem.ValueKind == JsonValueKind.String)
                 {
                     var value = elem.GetString();
@@ -166,20 +132,6 @@ public class MappingLoader
                         result[kvp.Key] = value;
                 }
             }
-
-            // Also read the "mappings" sub-object (if present)
-            if (data.TryGetValue("mappings", out var mappingsObj) &&
-                mappingsObj is JsonElement mappingsElement &&
-                mappingsElement.ValueKind == JsonValueKind.Object)
-            {
-                foreach (var prop in mappingsElement.EnumerateObject())
-                {
-                    var value = prop.Value.GetString();
-                    if (value != null)
-                        result[prop.Name] = value;
-                }
-            }
-
             return result;
         }
 
@@ -247,72 +199,5 @@ public class MappingLoader
             ["duplicates"] = duplicates,
             ["categories"] = GetCategories()
         };
-    }
-
-    /// <summary>
-    /// Parses a JSON string into a mapping dictionary (mirrors LoadMappingFile logic).
-    /// </summary>
-    private static Dictionary<string, object>? ParseMappingJson(string json, string resourceName)
-    {
-        try
-        {
-            using var doc = JsonDocument.Parse(json);
-            var data = new Dictionary<string, object>();
-
-            foreach (var prop in doc.RootElement.EnumerateObject())
-            {
-                data[prop.Name] = prop.Value.Clone();
-            }
-
-            return data;
-        }
-        catch (JsonException ex)
-        {
-            Console.WriteLine($@"[ERROR] Invalid JSON in embedded resource {resourceName}: {ex.Message}");
-            return null;
-        }
-    }
-
-    private static string GetCategory(Dictionary<string, object> data, string resourceName)
-    {
-        if (data.TryGetValue("category", out var category))
-            return category.ToString()!;
-
-        var nameWithoutExtension = resourceName.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
-            ? resourceName[..^5]
-            : resourceName;
-        var separatorIndex = nameWithoutExtension.LastIndexOf('.');
-        return separatorIndex >= 0 ? nameWithoutExtension[(separatorIndex + 1)..] : nameWithoutExtension;
-    }
-
-    /// <summary>
-    /// Merges a parsed mapping dictionary into the combined result.
-    /// </summary>
-    private static void MergeIntoCombined(Dictionary<string, string> combined, Dictionary<string, object> categoryMappings)
-    {
-        foreach (var kvp in categoryMappings)
-        {
-            if (kvp.Key is "category" or "description" or "mappings")
-                continue;
-
-            if (kvp.Value is JsonElement elem && elem.ValueKind == JsonValueKind.String)
-            {
-                var value = elem.GetString();
-                if (value != null)
-                    combined[kvp.Key] = value;
-            }
-        }
-
-        if (categoryMappings.TryGetValue("mappings", out var mappingsObj) &&
-            mappingsObj is JsonElement mappingsElement &&
-            mappingsElement.ValueKind == JsonValueKind.Object)
-        {
-            foreach (var prop in mappingsElement.EnumerateObject())
-            {
-                var value = prop.Value.GetString();
-                if (value != null)
-                    combined[prop.Name] = value;
-            }
-        }
     }
 }
